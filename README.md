@@ -1,37 +1,114 @@
-## Welcome to GitHub Pages
+# Implement DevOps in Google Cloud: Challenge Lab
 
-You can use the [editor on GitHub](https://github.com/arjunyash2/arjunyash2.github.io/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+Here you can find the steps for solving the challenges in Devops challenge lab
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+### Required Setting 
 
-### Markdown
+We need to create all the resources in `us-east1` region and `us-east1-b` zone.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+So, Open the cloud shell and paste the below code
 
-```markdown
-Syntax highlighted code block
+```gcloud config set compute/zone us-east1-b```
 
-# Header 1
-## Header 2
-### Header 3
+### Step-2
 
-- Bulleted
-- List
+#### Task 1: Configure a Jenkins pipeline for continuous deployment to Kubernetes Engine
 
-1. Numbered
-2. List
+### Step-1
+  Clone the sample code for the lab
+  > Remember replace `[ProjectID]` with your ProjectID
+  
+  ```git clone https://source.developers.google.com/p/[ProjectID]/r/sample-app```
+  
+### Step-2
+  `jenkins-cd` cluster is already provisioned for the lab so don't need to create a new kubernetes cluster.
+  You can verify that by running the following command
+  
+  ```gcloud container clusters list```
+  
+  Now get the credentials for the `jenkins-cd` cluster. 
+  
+  ```gcloud container clusters get-credentials jenkins-cd```
+  
+  Configure the Jenkins service account to be able to deploy to the cluster.
+  
+  ```kubectl create clusterrolebinding jenkins-deploy --clusterrole=cluster-admin --serviceaccount=default:cd-jenkins```
+  
+  Run the following command to setup port forwarding.
+  
+   ```
+   export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/component=jenkins-master" -l 
+   "app.kubernetes.io/instance=cd" -o jsonpath="{.items[0].metadata.name}")
+   kubectl port-forward $POD_NAME 8080:8080 >> /dev/null &
+   
+   ```
+   Get the password for the jenkins,run
+   
+   ```printf $(kubectl get secret cd-jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode);echo```
+   
+   Now open the Jenkins user interface by Click on **WebView** button on cloud shell and click on **Preview on port 8080**
+   Jenkins will open in new tab. Your username is `admin` and enter the password you got by running the above command.
+   
+   Navigate to application directory
+   
+   ```cd sample-app```
+   
+   Create the Kubernetes namespace to logically isolate the deployment
+   
+   ```kubectl create ns production```
+   
+   Create the production and canary deployments, and the services using the `kubectl apply` commands
+   
+   ```kubectl apply -f k8s/production -n production```
+   ```kubectl apply -f k8s/canary -n production```
+   ```kubectl apply -f k8s/services -n production```
+   
+   Retrieve the external ip of the services, run
+   
+   ```kubectl get service gceme-frontend -n production```
+   
+   Paste the `external ip` you can see the info-card with blue background header
+   
+   Initialize the sample app directory
+   
+   ```git init```
+   ```git config credential.helper gcloud.sh```
+   ```git remote add origin https://source.developers.google.com/p/$DEVSHELL_PROJECT_ID/r/default```
+   
+   Set username and email
+   
+   ```git config --global user.email "[EMAIL_ADDRESS]"```
+   > Replace `[EMAIL_ADDRESS]` with any git email(you can also replace with your GCP ProjectID)
+   
+   ```git config --global user.name "[USERNAME]"```
+   
+   > Replace `[EMAIL_ADDRESS]` with any git email(you can also replace with your GCP ProjectID)
+   
+   Next add your service account credentials for the jenkins to access code repository
+   
+   Go to jenkins as you have opened it in another tab by web preview
+   
+  
+   
+    
+   
+    
+    
+    
+  
+  
 
-**Bold** and _Italic_ and `Code` text
 
-[Link](url) and ![Image](src)
-```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
 
-### Jekyll Themes
+   
+    
+   
+    
+    
+    
+  
+  
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/arjunyash2/arjunyash2.github.io/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
 
-### Support or Contact
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
